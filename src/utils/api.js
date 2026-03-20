@@ -7,3 +7,10 @@ export const createSession = async () => {
   const data = await res.json();
   return data.sessionId;
 };
+
+export const getIceServers = async () => {
+  const response = await fetch(`${apiBase}/ice`);
+
+  const data = await response.json();
+  return data;
+};

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
+import { getIceServers } from "../utils/api";
 
 function formatBytes(bytes) {
   if (!bytes) return "0 B";
@@ -24,97 +25,117 @@ export default function Receiver() {
   const hasRun = useRef(false);
 
   useEffect(() => {
-    if (hasRun.current) return;
-    hasRun.current = true;
-
     if (!sessionId) return;
-    console.log("SESSION ID:", sessionId);
-    const ws = new WebSocket(`ws://localhost:8080/ws?sessionId=${sessionId}`);
-    console.log("ws",ws)
-    wsRef.current = ws;
 
-    ws.onopen = () => console.log("WS OPEN");
-    ws.onmessage = (msg) => console.log("WS MESSAGE:", msg.data);
-    ws.onerror = (e) => console.log("WS ERROR:", e);
-    ws.onclose = () => console.log("WS CLOSED");
+    let ws;
+    let pc;
 
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
-    pcRef.current = pc;
+    const init = async () => {
+      console.log("SESSION ID:", sessionId);
 
+      // ✅ 1. Get ICE servers FIRST
+      const iceServers = await getIceServers();
 
-    // ICE candidates
-    pc.onicecandidate = (event) => {
-      console.log("1")
-      if (event.candidate) {
-        ws.send(JSON.stringify({
-          type: "candidate",
-          candidate: event.candidate,
-        }));
-      }
-    };
+      // ✅ 2. Create PeerConnection FIRST
+      pc = new RTCPeerConnection({ iceServers });
+      pcRef.current = pc;
 
-    // Receive data channel
-    pc.ondatachannel = (event) => {
-      console.log("2")
+      pc.oniceconnectionstatechange = () => {
+        console.log("ICE STATE:", pc.iceConnectionState);
+      };
 
-      const channel = event.channel;
-      channel.onmessage = (e) => {
-        // Handle metadata
-        if (typeof e.data === "string") {
-          const data = JSON.parse(e.data);
-          if (data.type === "meta") {
-            setFileMeta(data);
-            setStatus("Receiving file...");
+      // ICE candidates
+      pc.onicecandidate = (event) => {
+        if (event.candidate && ws?.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: "candidate",
+            candidate: event.candidate,
+          }));
+        }
+      };
+
+      // Data channel
+      pc.ondatachannel = (event) => {
+        console.log("DATA CHANNEL RECEIVED ✅");
+
+        const channel = event.channel;
+
+        channel.onmessage = (e) => {
+          if (typeof e.data === "string") {
+            const data = JSON.parse(e.data);
+
+            if (data.type === "meta") {
+              setFileMeta(data);
+              setStatus("Receiving file...");
+            }
+
+            if (data.type === "end") {
+              const blob = new Blob(receivedBuffers.current);
+              const url = URL.createObjectURL(blob);
+              setDownloadUrl(url);
+              setStatus("Download ready");
+            }
+
+            return;
           }
 
-          if (data.type === "end") {
-            const blob = new Blob(receivedBuffers.current);
-            const url = URL.createObjectURL(blob);
-            setDownloadUrl(url);
-            setStatus("Download ready");
-          }
+          receivedBuffers.current.push(e.data);
+          receivedSize.current += e.data.byteLength;
 
-          return;
+          if (fileMeta?.size) {
+            setProgress((receivedSize.current / fileMeta.size) * 100);
+          }
+        };
+      };
+
+      // ✅ 3. THEN create WebSocket
+      ws = new WebSocket(`ws://localhost:8080/ws?sessionId=${sessionId}`);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log("WS OPEN (receiver)");
+      };
+
+      // signaling
+      ws.onmessage = async (msg) => {
+        console.log("SIGNAL RECEIVED:", msg.data);
+
+        const data = JSON.parse(msg.data);
+
+        if (data.type === "offer") {
+          console.log("OFFER RECEIVED ✅");
+
+          await pc.setRemoteDescription(data.offer);
+
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+
+          ws.send(JSON.stringify({
+            type: "answer",
+            answer,
+          }));
         }
 
-        // Binary data
-        receivedBuffers.current.push(e.data);
-        receivedSize.current += e.data.byteLength;
-
-        if (fileMeta?.size) {
-          setProgress((receivedSize.current / fileMeta.size) * 100);
+        if (data.type === "candidate") {
+          try {
+            await pc.addIceCandidate(data.candidate);
+          } catch (e) {
+            console.log("ICE ERROR", e);
+          }
         }
       };
     };
 
-    // Handle signaling
-    ws.onmessage = async (msg) => {
-      console.log("SIGNAL RECEIVED:", msg.data);
-      const data = JSON.parse(msg.data);
+    init();
 
-      if (data.type === "offer") {
-        await pc.setRemoteDescription(data.offer);
-
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-
-        ws.send(JSON.stringify({
-          type: "answer",
-          answer,
-        }));
-      }
-
-      if (data.type === "candidate") {
-        await pc.addIceCandidate(data.candidate);
-      }
-    };
-    console.log("Here running")
+    // ✅ CLEANUP FIXED
     return () => {
-      ws.close();
-      pc.close();
+      console.log("CLEANUP");
+
+      if (ws) ws.close();
+      if (pc) pc.close();
     };
+
   }, [sessionId]);
 
   return (

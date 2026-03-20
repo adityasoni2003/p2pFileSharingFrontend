@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { createSession } from "../utils/api";
+import { createSession, getIceServers } from "../utils/api";
 
 
 const baseUrl = import.meta.env.VITE_APP_BASE_URL;
@@ -39,7 +39,7 @@ export default function ShareThat() {
     try {
       const sessionId = await createSession();
       console.log("Generated Session ID",sessionId)
-      const url = `${baseUrl}/${sessionId}`;
+      const url = `${baseUrl}/receive/${sessionId}`;
       setShareUrl(url);
 
       // 🔌 WebSocket
@@ -47,8 +47,10 @@ export default function ShareThat() {
       wsRef.current = ws;
 
       // 🌐 WebRTC
+      const iceServers = await getIceServers();
+
       const pc = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        iceServers: iceServers,
       });
       pcRef.current = pc;
 
