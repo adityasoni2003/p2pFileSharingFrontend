@@ -1,6 +1,10 @@
 import { useState, useRef, useCallback } from "react";
 import { createSession } from "../utils/api";
 
+
+const baseUrl = import.meta.env.VITE_APP_BASE_URL;
+const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL;
+
 const QR_API = (url) =>
   `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}&bgcolor=0a0a0a&color=f0e6d3&margin=12`;
 
@@ -35,11 +39,11 @@ export default function ShareThat() {
     try {
       const sessionId = await createSession();
       console.log("Generated Session ID",sessionId)
-      const url = `http://localhost:5173/receive/${sessionId}`;
+      const url = `${baseUrl}/${sessionId}`;
       setShareUrl(url);
 
       // 🔌 WebSocket
-      const ws = new WebSocket(`ws://localhost:8080/ws?sessionId=${sessionId}`);
+      const ws = new WebSocket(`${wsBaseUrl}/ws?sessionId=${sessionId}`);
       wsRef.current = ws;
 
       // 🌐 WebRTC
