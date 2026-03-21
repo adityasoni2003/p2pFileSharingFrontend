@@ -4,6 +4,7 @@ import { createSession, getIceServers } from "../utils/api";
 
 const baseUrl = import.meta.env.VITE_APP_BASE_URL;
 const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL;
+const MAX_FILE_SIZE = 5 * 1024 * 1024
 
 const QR_API = (url) =>
   `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}&bgcolor=0a0a0a&color=f0e6d3&margin=12`;
@@ -24,6 +25,7 @@ export default function ShareThat() {
   const [copied, setCopied] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState("");
 
   const fileInputRef = useRef();
   const wsRef = useRef(null);
@@ -32,6 +34,9 @@ export default function ShareThat() {
 
   const handleFile = useCallback(async (f) => {
     if (!f) return;
+
+    setError("");
+
 
     setFile(f);
     setState("connecting");
@@ -93,22 +98,7 @@ export default function ShareThat() {
         }
       };
 
-      // Create offer
-      ws.onopen = () => {
-        console.log("WS OPEN (SENDER)");
 
-        setTimeout(async () => {
-          console.log("SENDING OFFER 🚀");
-
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-
-          ws.send(JSON.stringify({
-            type: "offer",
-            offer
-          }));
-        }, 15000); 
-      };
 
       // When channel opens → send file
       channel.onopen = () => {
@@ -155,14 +145,41 @@ export default function ShareThat() {
 
     readSlice(0);
   }
-  const onInputChange = (e) => handleFile(e.target.files?.[0]);
+  const onInputChange = (e) => {
+    const file = e.target.files?.[0];
+    e.stopPropagation(); // ✅ prevents browser weird behavior
+
+
+    if (!file) return;
+
+    // ✅ size check BEFORE anything heavy
+    if (file.size > MAX_FILE_SIZE) {
+      setError("File must be under 5 MB");
+      e.target.value = ""; // reset input
+      return;
+    }
+
+    handleFile(file);
+  };
 
   const onDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation(); // ✅ prevents browser weird behavior
     setDragOver(false);
-    handleFile(e.dataTransfer.files?.[0]);
-  };
 
+
+    const file = e.dataTransfer.files?.[0];
+
+    if (!file) return;
+
+    // ✅ size check early
+    if (file.size > MAX_FILE_SIZE) {
+      setError("File must be under 5 MB");
+      return;
+    }
+
+    handleFile(file);
+  };
   const copyUrl = () => {
     navigator.clipboard.writeText(shareUrl);
     setCopied(true);
@@ -185,12 +202,12 @@ export default function ShareThat() {
 
     <div className="card">
         <div className="header">
-        <div className="logo-mark">
-            <svg viewBox="0 0 20 20" fill="none">
-            <path d="M10 2L14 7H11V13H9V7H6L10 2Z" fill="white" />
-            <path d="M4 15H16V17H4V15Z" fill="white" opacity="0.7" />
-            </svg>
-        </div>
+          <div className="logo-mark">
+              <svg viewBox="0 0 20 20" fill="none">
+              <path d="M10 2L14 7H11V13H9V7H6L10 2Z" fill="white" />
+              <path d="M4 15H16V17H4V15Z" fill="white" opacity="0.7" />
+              </svg>
+          </div>
         <span className="logo-text">Share<span>That</span></span>
         <span className="tagline">Instant file sharing</span>
         </div>
@@ -212,7 +229,7 @@ export default function ShareThat() {
             </div>
             <div>
                 <div className="drop-title">Drop your file here</div>
-                <div className="drop-sub">or click to browse from your device<br />Any file type · Up to 2 GB</div>
+                <div className="drop-sub">or click to browse from your device<br />Any file type · Up to 5 MB</div>
             </div>
             <button className="browse-btn" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
                 Browse files
@@ -272,6 +289,11 @@ export default function ShareThat() {
             </button>
             </div>
         )}
+        {error && (
+            <div className="error-box">
+              {error}
+            </div>
+          )}
         </div>
 
         <div className="footer-note">

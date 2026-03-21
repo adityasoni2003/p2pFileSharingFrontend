@@ -140,40 +140,45 @@ export default function Receiver() {
 
   }, [sessionId]);
 
-  return (
-    <div className="app">
-      <div className="card">
+return (
+  <div className="receiver-app">
+    <div className="receiver-card">
 
-        <h2>Receiving File</h2>
+      <h2 className="receiver-title">Receiving File</h2>
+      <p className="receiver-status">{status}</p>
 
-        <p>{status}</p>
+      {fileMeta && (
+        <div className="file-info-box">
+          <div className="file-name">{fileMeta.name}</div>
+          <div className="file-size">{formatBytes(fileMeta.size)}</div>
 
-        {fileMeta && (
-          <div>
-            <div><strong>{fileMeta.name}</strong></div>
-            <div>{formatBytes(fileMeta.size)}</div>
-
-            <div style={{ width: "100%", background: "#222", height: 6, marginTop: 10 }}>
-              <div
-                style={{
-                  width: `${progress}%`,
-                  height: "100%",
-                  background: "#4caf50",
-                }}
-              />
-            </div>
+          <div className="progress-bar">
+            <div
+              className="progress-fill"
+              style={{ width: `${progress}%` }}
+            />
           </div>
-        )}
 
-        {downloadUrl && (
-          <a href={downloadUrl} download={fileMeta?.name}>
-            <button style={{ marginTop: 20 }}>
-              Download File
-            </button>
-          </a>
-        )}
+          <div className="progress-text">
+            {Math.round(progress)}%
+          </div>
+        </div>
+      )}
 
-      </div>
+      {downloadUrl && (
+        <a
+          href={downloadUrl}
+          download={fileMeta?.name}
+          className="download-link"
+        >
+          <button className="download-btn">
+            ⬇ Download File
+          </button>
+        </a>
+      )}
+
     </div>
-  );
+  </div>
+  )
+
 }

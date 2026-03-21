@@ -54,6 +54,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monosp
   padding: 28px 32px 24px;
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; gap: 14px;
+  flex-wrap: wrap;
 }
 
 .logo-mark {
@@ -64,6 +65,11 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monosp
 }
 
 .logo-mark svg { width: 20px; height: 20px; }
+
+.error-box{
+  color: #ff6b6b;
+  margin-top: 10px ;
+}
 
 .logo-text {
   font-family: 'Syne', sans-serif;
@@ -80,7 +86,6 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monosp
   color: var(--muted);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-left: auto;
 }
 
 .body { padding: 32px; }
@@ -317,4 +322,113 @@ input[type="file"] { display: none; }
   font-size: 10px; color: var(--muted);
   text-align: center; letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* 🌌 Background */
+.receiver-app {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, #0f0f0f, #050505);
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 🧊 Card */
+.receiver-card {
+  width: 360px;
+  padding: 28px;
+  margin: 8px;
+  border-radius: 18px;
+  background: rgba(20, 20, 20, 0.9);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* 🏷 Title */
+.receiver-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+/* 🔄 Status */
+.receiver-status {
+  font-size: 14px;
+  color: #aaa;
+  margin-bottom: 20px;
+}
+
+/* 📦 File Box */
+.file-info-box {
+  padding: 16px;
+  border-radius: 12px;
+  background: #111;
+  border: 1px solid #222;
+  margin-top: 10px;
+}
+
+/* 📄 File Name */
+.file-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+/* 📏 File Size */
+.file-size {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 12px;
+}
+
+/* 📊 Progress Bar */
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #222;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+/* 🔋 Progress Fill */
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #e8703a, #ff9a5a);
+  transition: width 0.2s ease;
+}
+
+/* 🔢 Progress Text */
+.progress-text {
+  font-size: 12px;
+  color: #aaa;
+}
+
+/* 🔽 Download Button */
+.download-link {
+  text-decoration: none;
+}
+
+.download-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #e8703a, #ff9a5a);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.download-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(232, 112, 58, 0.4);
 }
