@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getIceServers } from "../utils/api";
 
+const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL;
+
 function formatBytes(bytes) {
   if (!bytes) return "0 B";
   const k = 1024;
@@ -89,7 +91,7 @@ export default function Receiver() {
       };
 
       // ✅ 3. THEN create WebSocket
-      ws = new WebSocket(`ws://localhost:8080/ws?sessionId=${sessionId}`);
+      ws = new WebSocket(`${wsBaseUrl}/ws?sessionId=${sessionId}`);
       wsRef.current = ws;
 
       ws.onopen = () => {
